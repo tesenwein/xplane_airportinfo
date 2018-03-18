@@ -1,6 +1,5 @@
 VERSION = "0.1"
 
-
 # Python import
 from XPLMDefs import *
 from XPLMDisplay import *
@@ -11,15 +10,23 @@ from XPLMDataAccess import *
 from XPWidgets import *
 from XPStandardWidgets import *
 from XPLMUtilities import *
-from noaaweather import weather
+
+from metar import Metar
 
 import logging
 import os
 import platform
+import urllib
 import shutil
+import time
 import sys
 from argparse import ArgumentParser
 from operator import attrgetter
+
+FILE_INF = "cycle_info.txt"
+FILE_AWY = "earth_awy.dat"
+FILE_FIX = "earth_fix.dat"
+FILE_NAV = "earth_nav.dat"
 
 # menu
 SHOW_AIRPORT = 1
@@ -154,6 +161,7 @@ class PythonInterface:
 		self.current_airport_icao = ""
 		self.current_airport_name = ""
 		self.current_airport_info = ""
+		self.current_airport_metar = None
 		
 		self.AirportMenuCB = self.AMHandler
 		self.mPluginItem = XPLMAppendMenuItem(XPLMFindPluginsMenu(), "Aiport Info", 0, 1)
@@ -187,7 +195,7 @@ class PythonInterface:
 			 self.CreateAirportWindow()		
 
 	def AWHandler(self, inMessage, inWidget, inParam1, inParam2):
-
+	
  		if inMessage == xpMessage_CloseButtonPushed:
 			if self.AirportWindowCreated:
 				XPHideWidget(self.AirportWindow)
@@ -195,8 +203,10 @@ class PythonInterface:
 
 		# Handle all button pushes
 		if inMessage == xpMsg_PushButtonPressed:
-			 if inParam1 == self.BtnSearch:
+			if str(inParam1) == str(self.BtnSearch):
 				self.set_selected_icao_name()
+				return 1
+
 		return 0
 
 	def AWToggleHandler(self, inCommand, inPhase, inRefcon):
@@ -226,6 +236,7 @@ class PythonInterface:
 		bottom_window = top_window - WINDOW_H
 
 		row_h = 20
+		row_h2 = 15
 		padding = 5
 
 		left_col_1 = left_window + padding
@@ -251,33 +262,56 @@ class PythonInterface:
 
 		# Show Result		
 		top_row -= row_h
-		self.DescLine1 = XPCreateWidget(left_col_1, top_row,right_col_3, top_row - row_h, 1, self.current_airport_info, 0, self.AirportWindow, xpWidgetClass_Caption)
+		self.InfoTitle = XPCreateWidget(left_col_1, top_row,right_col_3, top_row - row_h, 1, "Current Information", 0, self.AirportWindow, xpWidgetClass_Caption)
+		top_row -= row_h
+		self.InfoRow1 = XPCreateWidget(left_col_1, top_row,right_col_3, top_row - row_h, 1, "Airport:", 0, self.AirportWindow, xpWidgetClass_Caption)
+		top_row -= row_h2
+		self.InfoRow2 = XPCreateWidget(left_col_1, top_row,right_col_3, top_row - row_h2, 1, "QNH:", 0, self.AirportWindow, xpWidgetClass_Caption)
+		top_row -= row_h2
+		self.InfoRow3 = XPCreateWidget(left_col_1, top_row,right_col_3, top_row - row_h2, 1, "WIND:", 0, self.AirportWindow, xpWidgetClass_Caption)
 
-		# Get the first information
-		self.set_selected_icao_name()
 
 		# Register the widget handler
 		self.AMHandlerCB = self.AWHandler
 		XPAddWidgetCallback(self, self.AirportWindow, self.AMHandlerCB)
-
 		
-	def set_selected_icao_name(self):		
+		# Lets get some data
+		self.init_data()
+
+	def init_data(self):
+		# Set the Input Box
+		Route_Finder = Route()
+		nearest_icao, nearest_name = Route_Finder.aiportinfo_by_nearest()
+		if(nearest_name):
+			XPSetWidgetDescriptor(self.AirportIcao, nearest_icao)
+		
+	def set_selected_icao_name(self):	
 		# get the formfield
+		Route_Finder = Route()
 		out_icao_name = []
+
 		XPGetWidgetDescriptor(self.AirportIcao, out_icao_name, 20)
 		self.current_airport_icao = out_icao_name[0]
-
+		
 		# search for the information
-		Route_Finder = Route()
 		if(len(self.current_airport_icao) < 4):
 			this_airporticao, this_airportname = Route_Finder.aiportinfo_by_nearest()		
 		else:
-			this_airporticao, this_airportname = Route_Finder.aiportinfo_by_icao()		
-
+			this_airporticao, this_airportname = Route_Finder.aiportinfo_by_icao(self.current_airport_icao)		
+	
 		self.current_airport_icao = this_airporticao
 		self.current_airport_name = this_airportname
 
-		return out_icao_name[0]
+		self.current_airport_metar = Route_Finder.get_airportweather_icao(self.current_airport_icao)
+
+		self.print_airport_info()
+
+	def print_airport_info(self):
+		XPSetWidgetDescriptor(self.InfoRow1, "Airport: " +  str(self.current_airport_name) + "(" + str(self.current_airport_icao) + ")")
+
+		if(self.current_airport_metar):
+			XPSetWidgetDescriptor(self.InfoRow2, "QNH: " +  str(self.current_airport_metar.press))
+			XPSetWidgetDescriptor(self.InfoRow3, "WIND: " + str(self.current_airport_metar.wind_dir) + "/" +  str(self.current_airport_metar.wind_speed))			
 
 class Route(object):
 
@@ -288,13 +322,23 @@ class Route(object):
 
 		return lat, lon
 
-	def airport_by_ref(self, ref):
+	def airportidname_by_ref(self, ref):
 
 		id = []
 		name = []
+
 		aiport = XPLMGetNavAidInfo(ref, None, None, None, None, None, None, id, name, None)
 
 		return id, name
+
+	def airportlatlon_by_ref(self, ref):
+
+		lat = []
+		lon = []
+
+		aiport = XPLMGetNavAidInfo(ref, None, lat, lon, None, None, None, None, None, None)
+
+		return lon, lat
 
 	def airportinfo_by_local(self):
 
@@ -304,20 +348,26 @@ class Route(object):
 		name = []
 		ref = XPLMFindNavAid(None, None, current_lat[0], current_lon[0], None, xplm_Nav_Airport)
 
-		id, airport_names = self.airport_by_ref(ref)
+		id, airport_names = self.airportidname_by_ref(ref)
 
 		if(len(airport_names) > 0):
 			return id[0], airport_names[0]
 		else:
 			return None
 
+	def aiportlatlon_by_icao(self, icao):
+		
+		ref = XPLMFindNavAid(None, icao, None, None, None, xplm_Nav_Airport)
+		airport_lat, airport_lon  = self.airportlatlon_by_ref(ref)
+
+		return airport_lat[0], airport_lon[0]
 
 	def aiportinfo_by_icao(self, name):
 
 		current_lat, current_lon = Route.call_lan_lot(self)
 		ref = XPLMFindNavAid(None, name, None, None, None, xplm_Nav_Airport)
 
-		id, airport_names = self.airport_by_ref(ref)
+		id, airport_names = self.airportidname_by_ref(ref)
 
 		if(len(airport_names) > 0):
 			return id[0], airport_names[0]
@@ -329,9 +379,41 @@ class Route(object):
 		airport_ids, airport_names  = Route.airportinfo_by_local(self)		
 
 		if(len(airport_ids) > 0):
-			return airport_ids[0], airport_names[0]
+			return airport_ids, airport_names
 		else:
 			return None
 
-	def icao_weather(icao):
-		print(icao)
+	def get_airportweather_icao(self, icao):
+		AWWeather = Weather(icao)
+		return AWWeather.data
+		
+		
+class Weather(object):
+
+	def __init__(self, icao):
+
+		self.icao = icao
+		self.metarcode = None
+		self.observations = None
+		self.data = None
+
+		self.get_noaa_weather()
+		self.convert_meta()
+
+	def get_noaa_weather(self):
+		
+		link = "http://tgftp.nws.noaa.gov/data/observations/metar/stations/" + self.icao.upper() + ".TXT"
+
+		f = urllib.urlopen(link)
+
+		if(f.getcode() != 404):
+			self.metarcode = f.readlines()[1]
+			
+
+	def convert_meta(self):
+
+		if(self.metarcode):
+			self.data = Metar.Metar(self.metarcode)
+
+
+		
