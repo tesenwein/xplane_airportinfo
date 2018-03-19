@@ -35,7 +35,7 @@ SHOW_AIRPORT = 1
 MARGIN_W = 30
 MARGIN_H = 30
 WINDOW_W = 350
-WINDOW_H = 240
+WINDOW_H = 300
 
 # some constants
 XPDIRS = ["Aircraft", "Airfoils"]
@@ -514,19 +514,12 @@ class Airport(object):
 		self.read_runway_information()
 
 	def read_runway_information(self):
-		apt_lat_lon_elev = {}
 		runways = {}
 		with open(self.airports_file_path, 'r') as f:
 			lines = f.readlines()
 			is_needed_apt = False
 			for no, line in enumerate(lines):
 				if line.startswith("A,%s," % self.icao.upper()):
-					apt_info = line.strip().split(',')
-					apt_lat_lon_elev = {
-						"lat": float(apt_info[3]),
-						"lon": float(apt_info[4]),
-						"elev": float(apt_info[5])
-					}
 					is_needed_apt = True
 					continue
 				if is_needed_apt:
@@ -557,9 +550,7 @@ class Airport(object):
 		runway_dir = min(runways_simple, key=lambda x:abs(x-int(wind)))
 
 		for runway in self.runways:
-
 			if(int(self.runways[runway].hdg) == runway_dir):
 				return self.runways[runway]
-
 
 		return None
