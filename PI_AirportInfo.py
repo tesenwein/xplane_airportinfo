@@ -34,7 +34,7 @@ SHOW_AIRPORT = 1
 # design
 MARGIN_W = 30
 MARGIN_H = 30
-WINDOW_W = 350
+WINDOW_W = 400
 WINDOW_H = 300
 
 # some constants
@@ -268,6 +268,11 @@ class PythonInterface:
 		self.InfoRow2 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
 		top_row -= row_h2
 		self.InfoRow3 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		top_row -= row_h2
+		self.InfoRow4 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		top_row -= row_h2
+		self.InfoRow5 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		
 		top_row -= row_h
 		self.rnwyInfoWin = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0,self.AirportWindow, xpWidgetClass_SubWindow)
 		XPSetWidgetProperty(self.rnwyInfoWin, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
@@ -313,7 +318,7 @@ class PythonInterface:
 		AirportOb = Airport(self.current_airport_icao)
 		self.current_airport_runways = AirportOb.runways
 
-		if(self.current_airport_metar.wind_dir):
+		if(self.current_airport_metar and self.current_airport_metar.wind_dir):
 			self.current_aiprot_openrunway = AirportOb.determine_open_runway(self.current_airport_metar.wind_dir.value())
 
 		self.print_airport_info()
@@ -328,9 +333,13 @@ class PythonInterface:
 		XPSetWidgetDescriptor(self.InfoRow1, "Airport: " +  str(self.current_airport_name) + " (" + str(self.current_airport_icao) + ")")
 
 		if(self.current_airport_metar):
-			XPSetWidgetDescriptor(self.InfoRow2, "qnh: {} / {}".format(self.current_airport_metar.press.string("mb"),self.current_airport_metar.press.string("in")))
+			XPSetWidgetDescriptor(self.InfoRow2, "Qnh: {} / {}".format(self.current_airport_metar.press.string("mb"),self.current_airport_metar.press.string("in")))
 			XPSetWidgetDescriptor(self.InfoRow3, "Wind: " + str(self.current_airport_metar.wind_dir) + " / " + self.current_airport_metar.wind())			
+			XPSetWidgetDescriptor(self.InfoRow4, "Visiblilty: " + self.current_airport_metar.visibility())			
+			XPSetWidgetDescriptor(self.InfoRow5, "Weather: " + self.current_airport_metar.sky_conditions())			
 		
+
+
 		# Get all Runways
 		if(self.current_airport_runways):
 			runway_strresult = ""
