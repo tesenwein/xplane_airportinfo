@@ -262,7 +262,7 @@ class PythonInterface:
 		XPSetWidgetDescriptor(self.AirportIcao, str(self.current_airport_icao))
 
 		# Show Result		
-		top_row -= row_h	
+		top_row -= row_h2
 		self.InfoRow1 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
 		top_row -= row_h2
 		self.InfoRow2 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
