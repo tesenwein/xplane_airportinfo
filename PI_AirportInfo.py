@@ -35,7 +35,7 @@ SHOW_AIRPORT = 1
 MARGIN_W = 30
 MARGIN_H = 30
 WINDOW_W = 350
-WINDOW_H = 190
+WINDOW_H = 240
 
 # some constants
 XPDIRS = ["Aircraft", "Airfoils"]
@@ -163,7 +163,7 @@ class PythonInterface:
 		self.current_aiprot_openrunway = None
 
 
-		self.airpotRwyWidget = None
+		self.airpotRwyWidgetContainer = None
 		
 		self.AirportMenuCB = self.AMHandler
 		self.mPluginItem = XPLMAppendMenuItem(XPLMFindPluginsMenu(), "Aiport Info", 0, 1)
@@ -250,7 +250,6 @@ class PythonInterface:
 
 		left_half_window = left_window + WINDOW_W / 2
 
-
 		# Create Window
 		self.AirportWindow = XPCreateWidget(left_window, top_window, right_window, bottom_window, 1, Buffer, 1,  0, xpWidgetClass_MainWindow)
  		XPSetWidgetProperty(self.AirportWindow, xpProperty_MainWindowHasCloseBoxes, 1)
@@ -269,11 +268,12 @@ class PythonInterface:
 		self.InfoRow2 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
 		top_row -= row_h2
 		self.InfoRow3 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
-		top_row -= row_h2+5
+		top_row -= row_h
 		self.rnwyInfoWin = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0,self.AirportWindow, xpWidgetClass_SubWindow)
 		XPSetWidgetProperty(self.rnwyInfoWin, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
-		self.rnwyInfoContent = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0, self.AirportWindow, xpWidgetClass_Caption)
-	
+
+ 		# Init the Container
+		self.airpotRwyWidgetContainer = XPWidgetContainer(self.AirportWindow, left_col_1, right_col_3, top_row+row_h2, row_h2)
 
 		# Register the widget handler
 		self.AMHandlerCB = self.AWHandler
@@ -295,9 +295,9 @@ class PythonInterface:
 		out_icao_name = []
 
 		XPGetWidgetDescriptor(self.AirportIcao, out_icao_name, 20)
-		self.current_airport_icao = out_icao_name[0]
+		self.current_airport_icao = out_icao_name[0].upper()
 
-		self.current_airport_icao = "LSZH"
+		#self.current_airport_icao = "LSZH"
 		
 		# search for the information
 		if(len(self.current_airport_icao) < 4):
@@ -322,27 +322,28 @@ class PythonInterface:
 		return self.current_airport_runways[str(runway_id)]
 
 	def print_airport_info(self):
+
+		self.airpotRwyWidgetContainer.remove_all()
+
 		XPSetWidgetDescriptor(self.InfoRow1, "Airport: " +  str(self.current_airport_name) + " (" + str(self.current_airport_icao) + ")")
 
 		if(self.current_airport_metar):
 			XPSetWidgetDescriptor(self.InfoRow2, "qnh: {} / {}".format(self.current_airport_metar.press.string("mb"),self.current_airport_metar.press.string("in")))
 			XPSetWidgetDescriptor(self.InfoRow3, "Wind: " + str(self.current_airport_metar.wind_dir) + " / " + self.current_airport_metar.wind())			
 		
-
-		if(self.current_aiprot_openrunway):
-			open_runway = self.get_runway_info(self.current_aiprot_openrunway)
-		
 		# Get all Runways
 		if(self.current_airport_runways):
 			runway_strresult = ""
 			for runway_info in self.current_airport_runways:	
 				prefix = ""
-				if(self.get_runway_info(runway_info).id == self.current_aiprot_openrunway):
+				if(self.get_runway_info(runway_info).id == self.current_aiprot_openrunway.id):
 					prefix = "*"
 
-				runway_strresult += prefix + self.get_runway_str(self.get_runway_info(runway_info)) + "\n"									
-				
-			XPSetWidgetDescriptor(self.rnwyInfoContent, runway_strresult)
+				runway_strresult = prefix + self.get_runway_str(self.get_runway_info(runway_info)) + "\n"									
+
+				self.airpotRwyWidgetContainer.new_caption(runway_strresult)
+
+			#XPSetWidgetDescriptor(self.rnwyInfoContent, runway_strresult)
 				
 
 	def get_runway_str(self, runway):
@@ -359,7 +360,36 @@ class PythonInterface:
 												runway.length)
 		return None
 			
-			
+class XPWidgetContainer(object):
+	
+	def __init__(self, parent_container, left, right, top, row_h = 13):
+	   
+		self.parent_container = parent_container
+		self.container = []
+		self.left = left
+		self.right = right
+		self.top = top
+		self.current_top = top
+		self.row_h = row_h
+
+	def new_caption(self, str_cap):
+
+		self.current_top -= self.row_h
+		widget = XPCreateWidget(self.left, self.current_top, self.right, self.current_top-self.row_h, 1, str_cap,  0, self.parent_container, xpWidgetClass_Caption)
+		self.container.append(widget)
+		
+
+	def remove_all(self):
+		
+		if(len(self.container)>0):
+			for i in self.container:
+				XPHideWidget(i)
+				#XPDestroyWidget(i,self.parent_container, 0)
+
+		# Reset the height
+		self.current_top = self.top
+
+
 class Route(object):
 
 	def call_lan_lot(self):
@@ -515,8 +545,6 @@ class Airport(object):
 					else:
 						break
 
-		print runways
-
 		self.runways = runways
 
 	def determine_open_runway(self, wind):
@@ -524,14 +552,14 @@ class Airport(object):
 		runways_simple = []
 
 		for runway in self.runways:
-			runways_simple.append(int(runway))
+			runways_simple.append(int(self.runways[runway].hdg))
 
 		runway_dir = min(runways_simple, key=lambda x:abs(x-int(wind)))
 
 		for runway in self.runways:
 
 			if(int(self.runways[runway].hdg) == runway_dir):
-				return self.runways[runway].id 
+				return self.runways[runway]
 
 
 		return None
