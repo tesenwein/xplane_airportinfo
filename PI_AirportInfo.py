@@ -1,5 +1,6 @@
 VERSION = "0.1"
 
+
 # Python import
 from XPLMDefs import *
 from XPLMDisplay import *
@@ -54,7 +55,7 @@ log_formatter = logging.Formatter(
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 # log to console:
-console_handler = logging.StreamHandler()
+console_handler = logging.Stream_handler()
 console_handler.setFormatter(log_formatter)
 console_handler.setLevel(logging.INFO)
 logger.addHandler(console_handler)
@@ -155,7 +156,7 @@ class PythonInterface:
 		self.Name = "Aiport Info" + VERSION
 		self.Sig =  "TheoEsenwein.Python.AiportInfo"
 		self.Desc = "A plugin to get some Aiport information."
-		self.AirportWindowCreated = False
+		self.airport_window_created = False
 		self.current_airport_icao = ""
 		self.current_airport_name = ""
 		self.current_airport_metar = None
@@ -165,22 +166,22 @@ class PythonInterface:
 
 		self.airpotRwyWidgetContainer = None
 		
-		self.AirportMenuCB = self.AMHandler
-		self.mPluginItem = XPLMAppendMenuItem(XPLMFindPluginsMenu(), "Aiport Info", 0, 1)
-		self.mMain = XPLMCreateMenu(self, "Airport Information", XPLMFindPluginsMenu(), self.mPluginItem, self.AirportMenuCB, 0)
-		self.mToggleWindow = XPLMAppendMenuItem(self.mMain, 'Toggle Window', SHOW_AIRPORT, 1)
+		self.airport_menu_cb = self.am_handler
+		self.menu_plugin_item = XPLMAppendMenuItem(XPLMFindPluginsMenu(), "Aiport Info", 0, 1)
+		self.menu_main = XPLMCreateMenu(self, "Airport Information", XPLMFindPluginsMenu(), self.menu_plugin_item, self.airport_menu_cb, 0)
+		self.menu_toggle_window = XPLMAppendMenuItem(self.menu_main, 'Toggle Window', SHOW_AIRPORT, 1)
 
   		# Custom Command
-		self.AWToggle = XPLMCreateCommand("Aiprotinfo/Window_toggle", "Toggle Airport Info")
-		self.AWToggleHandlerCB = self.AWToggleHandler
-		XPLMRegisterCommandHandler(self, self.AWToggle, self.AWToggleHandlerCB, 1, 0)
+		self.aw_toggle = XPLMCreateCommand("Aiprotinfo/Window_toggle", "Toggle Airport Info")
+		self.aw_toggle_handler_cb = self.aw_toggleHandler
+		XPLMRegisterCommandHandler(self, self.aw_toggle, self.aw_toggle_handler_cb, 1, 0)
 	  
 		return self.Name, self.Sig, self.Desc
 
 	def XPluginStop(self):
-		if self.AirportWindowCreated:
-			XPDestroyWidget(self, self.AirportWindow, 1)
-			self.AirportWindowCreated = False
+		if self.airport_window_created:
+			XPDestroyWidget(self, self.airport_window, 1)
+			self.airport_window_created = False
 		pass
 	
 	def XPluginEnable(self):
@@ -192,15 +193,15 @@ class PythonInterface:
 	def XPluginReceiveMessage(self, inFromWho, inMessage, inParam):
 		pass
 
-	def AMHandler(self, inMenuRef, inItemRef):
+	def am_handler(self, inMenuRef, inItemRef):
 		if inItemRef == SHOW_AIRPORT:
-			 self.CreateAirportWindow()		
+			 self.create_airport_window()		
 
-	def AWHandler(self, inMessage, inWidget, inParam1, inParam2):
+	def aw_handler(self, inMessage, inWidget, inParam1, inParam2):
 	
  		if inMessage == xpMessage_CloseButtonPushed:
-			if self.AirportWindowCreated:
-				XPHideWidget(self.AirportWindow)
+			if self.airport_window_created:
+				XPHideWidget(self.airport_window)
 			return 1
 
 		# Handle all button pushes
@@ -211,23 +212,23 @@ class PythonInterface:
 
 		return 0
 
-	def AWToggleHandler(self, inCommand, inPhase, inRefcon):
+	def aw_toggleHandler(self, inCommand, inPhase, inRefcon):
 		# execute the command only on press
 		if inPhase == 0:
-			if not self.AirportWindowCreated:
-				self.CreateAirportWindow()
+			if not self.airport_window_created:
+				self.create_airport_window()
 			else:
-				if not XPIsWidgetVisible(self.AirportWindow):
-					XPShowWidget(self.AirportWindow)
+				if not XPIsWidgetVisible(self.airport_window):
+					XPShowWidget(self.airport_window)
 				else:
-					XPHideWidget(self.AirportWindow)
+					XPHideWidget(self.airport_window)
 		return 0
 				
-	def CreateAirportWindow(self):
-  		if self.AirportWindowCreated:
-			XPDestroyWidget(self, self.AirportWindow, 1)
+	def create_airport_window(self):
+  		if self.airport_window_created:
+			XPDestroyWidget(self, self.airport_window, 1)
 		
-		self.AirportWindowCreated = True
+		self.airport_window_created = True
 
 		Buffer = "Airport Info " + VERSION
 		screen_w, screen_h = [], []
@@ -251,38 +252,38 @@ class PythonInterface:
 		left_half_window = left_window + WINDOW_W / 2
 
 		# Create Window
-		self.AirportWindow = XPCreateWidget(left_window, top_window, right_window, bottom_window, 1, Buffer, 1,  0, xpWidgetClass_MainWindow)
- 		XPSetWidgetProperty(self.AirportWindow, xpProperty_MainWindowHasCloseBoxes, 1)
+		self.airport_window = XPCreateWidget(left_window, top_window, right_window, bottom_window, 1, Buffer, 1,  0, xpWidgetClass_MainWindow)
+ 		XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowHasCloseBoxes, 1)
 
 		# Icao entry
 		top_row = top_window - 22
-		self.AirportIcaoLb1 = XPCreateWidget(left_col_1, top_row, right_col_1, top_row - row_h, 1, "ICAO", 0, self.AirportWindow, xpWidgetClass_Caption)
-		self.AirportIcao = XPCreateWidget(left_col_2, top_row, right_col_2 , top_row - row_h, 1, "", 0, self.AirportWindow, xpWidgetClass_TextField)
-	   	self.BtnSearch = XPCreateWidget(left_col_3, top_row, right_col_3, top_row - row_h, 1, "Search", 0, self.AirportWindow, xpWidgetClass_Button)
+		self.AirportIcaoLb1 = XPCreateWidget(left_col_1, top_row, right_col_1, top_row - row_h, 1, "ICAO", 0, self.airport_window, xpWidgetClass_Caption)
+		self.AirportIcao = XPCreateWidget(left_col_2, top_row, right_col_2 , top_row - row_h, 1, "", 0, self.airport_window, xpWidgetClass_TextField)
+	   	self.BtnSearch = XPCreateWidget(left_col_3, top_row, right_col_3, top_row - row_h, 1, "Search", 0, self.airport_window, xpWidgetClass_Button)
 		XPSetWidgetDescriptor(self.AirportIcao, str(self.current_airport_icao))
 
 		# Show Result		
 		top_row -= row_h2
-		self.InfoRow1 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		self.info_row_1 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
 		top_row -= row_h2
-		self.InfoRow2 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		self.info_row_2 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
 		top_row -= row_h2
-		self.InfoRow3 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		self.info_row_3 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
 		top_row -= row_h2
-		self.InfoRow4 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		self.info_row_4 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
 		top_row -= row_h2
-		self.InfoRow5 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		self.info_row_5 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
 		
 		top_row -= row_h
-		self.rnwyInfoWin = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0,self.AirportWindow, xpWidgetClass_SubWindow)
-		XPSetWidgetProperty(self.rnwyInfoWin, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
+		self.rnwy_info = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0,self.airport_window, xpWidgetClass_SubWindow)
+		XPSetWidgetProperty(self.rnwy_info, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
 
  		# Init the Container
-		self.airpotRwyWidgetContainer = XPWidgetContainer(self.AirportWindow, left_col_1, right_col_3, top_row+row_h2, row_h2)
+		self.airpotRwyWidgetContainer = XPWidgetContainer(self.airport_window, left_col_1, right_col_3, top_row+row_h2, row_h2)
 
 		# Register the widget handler
-		self.AMHandlerCB = self.AWHandler
-		XPAddWidgetCallback(self, self.AirportWindow, self.AMHandlerCB)
+		self.am_handlerCB = self.aw_handler
+		XPAddWidgetCallback(self, self.airport_window, self.am_handlerCB)
 		
 		# Lets get some data
 		self.init_data()
@@ -293,7 +294,9 @@ class PythonInterface:
 		nearest_icao, nearest_name = Route_Finder.aiportinfo_by_nearest()
 		if(nearest_name):
 			XPSetWidgetDescriptor(self.AirportIcao, nearest_icao)
-		
+
+	def print_airport_info(self):
+
 	def set_selected_icao_name(self):	
 		# get the formfield
 		Route_Finder = Route()
@@ -313,30 +316,30 @@ class PythonInterface:
 		self.current_airport_icao = this_airporticao
 		self.current_airport_name = this_airportname
 
-		self.current_airport_metar = Route_Finder.get_airportweather_icao(self.current_airport_icao)
+		self.current_airport_metar = Route_Finder.airport_weather_by_icao(self.current_airport_icao)
 
 		AirportOb = Airport(self.current_airport_icao)
 		self.current_airport_runways = AirportOb.runways
 
 		if(self.current_airport_metar and self.current_airport_metar.wind_dir):
-			self.current_aiprot_openrunway = AirportOb.determine_open_runway(self.current_airport_metar.wind_dir.value())
+			self.current_aiprot_openrunway = AirportOb.open_runway(self.current_airport_metar.wind_dir.value())
 
 		self.print_airport_info()
 
 	def get_runway_info(self, runway_id):
 		return self.current_airport_runways[str(runway_id)]
 
-	def print_airport_info(self):
+	
 
 		self.airpotRwyWidgetContainer.remove_all()
 
-		XPSetWidgetDescriptor(self.InfoRow1, "Airport: " +  str(self.current_airport_name) + " (" + str(self.current_airport_icao) + ")")
+		XPSetWidgetDescriptor(self.info_row_1, "Airport: " +  str(self.current_airport_name) + " (" + str(self.current_airport_icao) + ")")
 
 		if(self.current_airport_metar):
-			XPSetWidgetDescriptor(self.InfoRow2, "Qnh: {} / {}".format(self.current_airport_metar.press.string("mb"),self.current_airport_metar.press.string("in")))
-			XPSetWidgetDescriptor(self.InfoRow3, "Wind: " + str(self.current_airport_metar.wind_dir) + " / " + self.current_airport_metar.wind())			
-			XPSetWidgetDescriptor(self.InfoRow4, "Visiblilty: " + self.current_airport_metar.visibility())			
-			XPSetWidgetDescriptor(self.InfoRow5, "Weather: " + self.current_airport_metar.sky_conditions())			
+			XPSetWidgetDescriptor(self.info_row_2, "Qnh: {} / {}".format(self.current_airport_metar.press.string("mb"),self.current_airport_metar.press.string("in")))
+			XPSetWidgetDescriptor(self.info_row_3, "Wind: " + str(self.current_airport_metar.wind_dir) + " / " + self.current_airport_metar.wind())			
+			XPSetWidgetDescriptor(self.info_row_4, "Visiblilty: " + self.current_airport_metar.visibility())			
+			XPSetWidgetDescriptor(self.info_row_5, "Weather: " + self.current_airport_metar.sky_conditions())			
 		
 
 
@@ -354,7 +357,6 @@ class PythonInterface:
 
 			#XPSetWidgetDescriptor(self.rnwyInfoContent, runway_strresult)
 				
-
 	def get_runway_str(self, runway):
 			
 		if(runway.ils != "0.000"):
@@ -383,10 +385,9 @@ class XPWidgetContainer(object):
 
 	def new_caption(self, str_cap):
 
-		self.current_top -= self.row_h
+		self.current_top -= self.row_hx
 		widget = XPCreateWidget(self.left, self.current_top, self.right, self.current_top-self.row_h, 1, str_cap,  0, self.parent_container, xpWidgetClass_Caption)
-		self.container.append(widget)
-		
+		self.container.append(widget)	
 
 	def remove_all(self):
 		
@@ -408,7 +409,7 @@ class Route(object):
 
 		return lat, lon
 
-	def airportidname_by_ref(self, ref):
+	def airport_id_name_by_ref(self, ref):
 
 		id = []
 		name = []
@@ -417,7 +418,7 @@ class Route(object):
 
 		return id, name
 
-	def airportlatlon_by_ref(self, ref):
+	def airport_latlon_by_ref(self, ref):
 
 		lat = []
 		lon = []
@@ -426,7 +427,7 @@ class Route(object):
 
 		return lon, lat
 
-	def airportinfo_by_local(self):
+	def airport_info_by_local(self):
 
 		current_lat, current_lon = Route.call_lan_lot(self)
 
@@ -434,17 +435,17 @@ class Route(object):
 		name = []
 		ref = XPLMFindNavAid(None, None, current_lat[0], current_lon[0], None, xplm_Nav_Airport)
 
-		id, airport_names = self.airportidname_by_ref(ref)
+		id, airport_names = self.airport_id_name_by_ref(ref)
 
 		if(len(airport_names) > 0):
 			return id[0], airport_names[0]
 		else:
 			return None
 
-	def aiportlatlon_by_icao(self, icao):
+	def aiport_latlon_by_icao(self, icao):
 		
 		ref = XPLMFindNavAid(None, icao, None, None, None, xplm_Nav_Airport)
-		airport_lat, airport_lon  = self.airportlatlon_by_ref(ref)
+		airport_lat, airport_lon  = self.airport_latlon_by_ref(ref)
 
 		return airport_lat[0], airport_lon[0]
 
@@ -453,7 +454,7 @@ class Route(object):
 		current_lat, current_lon = Route.call_lan_lot(self)
 		ref = XPLMFindNavAid(None, name, None, None, None, xplm_Nav_Airport)
 
-		id, airport_names = self.airportidname_by_ref(ref)
+		id, airport_names = self.airport_id_name_by_ref(ref)
 
 		if(len(airport_names) > 0):
 			return id[0], airport_names[0]
@@ -462,14 +463,14 @@ class Route(object):
 
 	def aiportinfo_by_nearest(self):
 		
-		airport_ids, airport_names  = Route.airportinfo_by_local(self)		
+		airport_ids, airport_names  = Route.airport_info_by_local(self)		
 
 		if(len(airport_ids) > 0):
 			return airport_ids, airport_names
 		else:
 			return None
 
-	def get_airportweather_icao(self, icao):
+	def airport_weather_by_icao(self, icao):
 		AWWeather = Weather(icao)
 		return AWWeather.data
 		
@@ -497,7 +498,6 @@ class Weather(object):
 			
 
 	def convert_meta(self):
-
 		if(self.metarcode):
 			self.data = Metar.Metar(self.metarcode)
 
@@ -549,7 +549,7 @@ class Airport(object):
 
 		self.runways = runways
 
-	def determine_open_runway(self, wind):
+	def open_runway(self, wind):
 
 		runways_simple = []
 
