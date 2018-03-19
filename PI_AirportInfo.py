@@ -45,6 +45,7 @@ SCRIPT_NAME = os.path.split(os.path.abspath(__file__))[1]
 # ----------------------------------------------------------------------------
 def pjoin(*args, **kwargs):
 	return os.path.join(*args, **kwargs).replace(os.path.sep, '/')
+# ----------------------------------------------------------------------------
 
 # logger:
 log_formatter = logging.Formatter(
@@ -54,7 +55,7 @@ log_formatter = logging.Formatter(
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 # log to console:
-console_handler = logging.Stream_handler()
+console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_formatter)
 console_handler.setLevel(logging.INFO)
 logger.addHandler(console_handler)
@@ -156,7 +157,7 @@ class PythonInterface:
 		right_window = left_window + WINDOW_W
 		bottom_window = top_window - WINDOW_H
 
-		row_h = 20
+		row_h = 25
 		row_h2 = 15
 		padding = 5
 
@@ -171,6 +172,7 @@ class PythonInterface:
 
 		# Create Window
 		self.airport_window = XPCreateWidget(left_window, top_window, right_window, bottom_window, 1, Buffer, 1,  0, xpWidgetClass_MainWindow)
+		XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowType, xpMainWindowStyle_Translucent)
  		XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowHasCloseBoxes, 1)
 
 		# Icao entry
@@ -181,8 +183,8 @@ class PythonInterface:
 		XPSetWidgetDescriptor(self.AirportIcao, str(self.current_airport_icao))
 
 		# Show Result		
-		top_row -= row_h2
-		self.info_row_1 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
+		top_row -= row_h
+		self.info_row_1 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
 		top_row -= row_h2
 		self.info_row_2 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
 		top_row -= row_h2
@@ -193,8 +195,8 @@ class PythonInterface:
 		self.info_row_5 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
 		
 		top_row -= row_h
-		self.rnwy_info = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0,self.airport_window, xpWidgetClass_SubWindow)
-		XPSetWidgetProperty(self.rnwy_info, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
+		#self.rnwy_info = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0,self.airport_window, xpWidgetClass_SubWindow)
+		#XPSetWidgetProperty(self.rnwy_info, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
 
  		# Init the Container
 		self.airpot_rwy_widget_container = XPWidgetContainer(self.airport_window, left_col_1, right_col_3, top_row+row_h2, row_h2)
