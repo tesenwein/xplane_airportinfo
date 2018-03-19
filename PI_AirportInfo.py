@@ -424,7 +424,6 @@ class XPWidgetContainer(object):
 		# Reset the height
 		self.current_top = self.top
 
-
 class Route(object):
 
 	def call_lan_lot(self):
@@ -497,8 +496,7 @@ class Route(object):
 	def airport_weather_by_icao(self, icao):
 		AWWeather = Weather(icao)
 		return AWWeather.data
-		
-		
+			
 class Weather(object):
 
 	def __init__(self, icao):
