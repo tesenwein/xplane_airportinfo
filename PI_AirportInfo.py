@@ -148,6 +148,7 @@ class PythonInterface:
 			XPDestroyWidget(self, self.airport_window, 1)
 		
 		self.airport_window_created = True
+		self.is_transluscent = 1
 
 		Buffer = "Airport Info " + VERSION
 		screen_w, screen_h = [], []
@@ -172,15 +173,17 @@ class PythonInterface:
 
 		# Create Window
 		self.airport_window = XPCreateWidget(left_window, top_window, right_window, bottom_window, 1, Buffer, 1,  0, xpWidgetClass_MainWindow)
-		XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowType, xpMainWindowStyle_Translucent)
- 		XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowHasCloseBoxes, 1)
+		XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowHasCloseBoxes, 1)
+		if(self.is_transluscent):
+			XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowType, xpMainWindowStyle_Translucent)
+ 		
 
 		# Icao entry
 		top_row = top_window - 22
-		self.AirportIcaoLb1 = XPCreateWidget(left_col_1, top_row, right_col_1, top_row - row_h, 1, "ICAO", 0, self.airport_window, xpWidgetClass_Caption)
-		self.AirportIcao = XPCreateWidget(left_col_2, top_row, right_col_2 , top_row - row_h, 1, "", 0, self.airport_window, xpWidgetClass_TextField)
+		self.label_icao = XPCreateWidget(left_col_1, top_row, right_col_1, top_row - row_h, 1, "ICAO", 0, self.airport_window, xpWidgetClass_Caption)
+		self.airport_icao = XPCreateWidget(left_col_2, top_row, right_col_2 , top_row - row_h, 1, "", 0, self.airport_window, xpWidgetClass_TextField)
 	   	self.BtnSearch = XPCreateWidget(left_col_3, top_row, right_col_3, top_row - row_h, 1, "Search", 0, self.airport_window, xpWidgetClass_Button)
-		XPSetWidgetDescriptor(self.AirportIcao, str(self.current_airport_icao))
+		XPSetWidgetDescriptor(self.airport_icao, str(self.current_airport_icao))
 
 		# Show Result		
 		top_row -= row_h
@@ -199,7 +202,7 @@ class PythonInterface:
 		#XPSetWidgetProperty(self.rnwy_info, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
 
  		# Init the Container
-		self.airpot_rwy_widget_container = XPWidgetContainer(self.airport_window, left_col_1, right_col_3, top_row+row_h2, row_h2)
+		self.airpot_rwy_widget_container = XPWidgetContainer(self.airport_window, left_col_1, right_col_3, top_row+row_h2, row_h2, self.is_transluscent)
 
 		# Register the widget handler
 		self.am_handlerCB = self.aw_handler
@@ -213,7 +216,7 @@ class PythonInterface:
 		Route_Finder = Route()
 		nearest_icao, nearest_name = Route_Finder.aiportinfo_by_nearest()
 		if(nearest_name):
-			XPSetWidgetDescriptor(self.AirportIcao, nearest_icao)
+			XPSetWidgetDescriptor(self.airport_icao, nearest_icao)
 
 	def print_airport_info(self):
     		
@@ -244,12 +247,23 @@ class PythonInterface:
 			#XPSetWidgetDescriptor(self.rnwyInfoContent, runway_strresult)
 
 
+	def set_translucency(self):
+
+		 XPSetWidgetProperty(self.label_icao, xpProperty_CaptionLit, self.is_transluscent)
+		 XPSetWidgetProperty(self.airport_icao, xpProperty_CaptionLit, self.is_transluscent)
+		 XPSetWidgetProperty(self.info_row_1, xpProperty_CaptionLit, self.is_transluscent)
+		 XPSetWidgetProperty(self.info_row_2, xpProperty_CaptionLit, self.is_transluscent)
+		 XPSetWidgetProperty(self.info_row_3, xpProperty_CaptionLit, self.is_transluscent)
+		 XPSetWidgetProperty(self.info_row_4, xpProperty_CaptionLit, self.is_transluscent)
+		 XPSetWidgetProperty(self.info_row_5, xpProperty_CaptionLit, self.is_transluscent)
+
+
 	def set_selected_icao_name(self):	
 		# get the formfield
 		Route_Finder = Route()
 		out_icao_name = []
 
-		XPGetWidgetDescriptor(self.AirportIcao, out_icao_name, 20)
+		XPGetWidgetDescriptor(self.airport_icao, out_icao_name, 20)
 		self.current_airport_icao = out_icao_name[0].upper()
 
 		#self.current_airport_icao = "LSZH"
@@ -320,7 +334,7 @@ class PythonInterface:
 			
 class XPWidgetContainer(object):
 	
-	def __init__(self, parent_container, left, right, top, row_h = 13):
+	def __init__(self, parent_container, left, right, top, row_h, is_transluscent):
 	   
 		self.parent_container = parent_container
 		self.container = []
@@ -329,11 +343,13 @@ class XPWidgetContainer(object):
 		self.top = top
 		self.current_top = top
 		self.row_h = row_h
+		self.is_transluscent = is_transluscent
 
 	def new_caption(self, str_cap):
 
 		self.current_top -= self.row_h
 		widget = XPCreateWidget(self.left, self.current_top, self.right, self.current_top-self.row_h, 1, str_cap,  0, self.parent_container, xpWidgetClass_Caption)
+		XPSetWidgetProperty(widget, xpProperty_CaptionLit, self.is_transluscent)
 		self.container.append(widget)	
 
 	def remove_all(self):
