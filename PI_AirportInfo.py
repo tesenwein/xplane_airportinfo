@@ -410,7 +410,7 @@ class XPWidgetContainer(object):
 
 	def new_caption(self, str_cap):
 
-		self.current_top -= self.row_hx
+		self.current_top -= self.row_h
 		widget = XPCreateWidget(self.left, self.current_top, self.right, self.current_top-self.row_h, 1, str_cap,  0, self.parent_container, xpWidgetClass_Caption)
 		self.container.append(widget)	
 
@@ -476,7 +476,6 @@ class Route(object):
 
 	def aiportinfo_by_icao(self, name):
 
-		current_lat, current_lon = Route.call_lan_lot(self)
 		ref = XPLMFindNavAid(None, name, None, None, None, xplm_Nav_Airport)
 
 		id, airport_names = self.airport_id_name_by_ref(ref)
