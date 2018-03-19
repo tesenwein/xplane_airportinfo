@@ -1,6 +1,5 @@
 VERSION = "0.1"
 
-
 # Python import
 from XPLMDefs import *
 from XPLMDisplay import *
@@ -163,8 +162,7 @@ class PythonInterface:
 		self.current_airport_runways = None
 		self.current_aiprot_openrunway = None
 
-
-		self.airpotRwyWidgetContainer = None
+		self.airpot_rwy_widget_container = None
 		
 		self.airport_menu_cb = self.am_handler
 		self.menu_plugin_item = XPLMAppendMenuItem(XPLMFindPluginsMenu(), "Aiport Info", 0, 1)
@@ -279,7 +277,7 @@ class PythonInterface:
 		XPSetWidgetProperty(self.rnwy_info, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
 
  		# Init the Container
-		self.airpotRwyWidgetContainer = XPWidgetContainer(self.airport_window, left_col_1, right_col_3, top_row+row_h2, row_h2)
+		self.airpot_rwy_widget_container = XPWidgetContainer(self.airport_window, left_col_1, right_col_3, top_row+row_h2, row_h2)
 
 		# Register the widget handler
 		self.am_handlerCB = self.aw_handler
@@ -296,6 +294,33 @@ class PythonInterface:
 			XPSetWidgetDescriptor(self.AirportIcao, nearest_icao)
 
 	def print_airport_info(self):
+    		
+		self.airpot_rwy_widget_container.remove_all()
+
+		XPSetWidgetDescriptor(self.info_row_1, "Airport: " +  str(self.current_airport_name) + " (" + str(self.current_airport_icao) + ")")
+
+		if(self.current_airport_metar):
+			XPSetWidgetDescriptor(self.info_row_2, "Qnh: {} / {}".format(self.current_airport_metar.press.string("mb"),self.current_airport_metar.press.string("in")))
+			XPSetWidgetDescriptor(self.info_row_3, "Wind: " + str(self.current_airport_metar.wind_dir) + " / " + self.current_airport_metar.wind())			
+			XPSetWidgetDescriptor(self.info_row_4, "Visiblilty: " + self.current_airport_metar.visibility())			
+			XPSetWidgetDescriptor(self.info_row_5, "Weather: " + self.current_airport_metar.sky_conditions())			
+		
+
+
+		# Get all Runways
+		if(self.current_airport_runways):
+			runway_strresult = ""
+			for runway_info in self.current_airport_runways:	
+				prefix = ""
+				if(self.get_runway_info(runway_info).id == self.current_aiprot_openrunway.id):
+					prefix = "*"
+
+				runway_strresult = prefix + self.get_runway_str(self.get_runway_info(runway_info)) + "\n"									
+
+				self.airpot_rwy_widget_container.new_caption(runway_strresult)
+
+			#XPSetWidgetDescriptor(self.rnwyInfoContent, runway_strresult)
+
 
 	def set_selected_icao_name(self):	
 		# get the formfield
@@ -331,7 +356,7 @@ class PythonInterface:
 
 	
 
-		self.airpotRwyWidgetContainer.remove_all()
+		self.airpot_rwy_widget_container.remove_all()
 
 		XPSetWidgetDescriptor(self.info_row_1, "Airport: " +  str(self.current_airport_name) + " (" + str(self.current_airport_icao) + ")")
 
@@ -353,7 +378,7 @@ class PythonInterface:
 
 				runway_strresult = prefix + self.get_runway_str(self.get_runway_info(runway_info)) + "\n"									
 
-				self.airpotRwyWidgetContainer.new_caption(runway_strresult)
+				self.airpot_rwy_widget_container.new_caption(runway_strresult)
 
 			#XPSetWidgetDescriptor(self.rnwyInfoContent, runway_strresult)
 				
