@@ -14,6 +14,7 @@ from XPLMUtilities import *
 from metar import Metar
 
 import logging
+import operator
 import os
 import platform
 import urllib
@@ -82,6 +83,7 @@ class PythonInterface:
 		self.current_airport_metar = None
 		self.current_airport_runways = None
 		self.current_aiprot_openrunway = None
+		self.is_transluscent = 1
 
 		self.airpot_rwy_widget_container = None
 		
@@ -125,7 +127,7 @@ class PythonInterface:
 
 		# Handle all button pushes
 		if inMessage == xpMsg_PushButtonPressed:
-			if str(inParam1) == str(self.BtnSearch):
+			if str(inParam1) == str(self.btn_search):
 				self.set_selected_icao_name()
 				return 1
 
@@ -148,7 +150,6 @@ class PythonInterface:
 			XPDestroyWidget(self, self.airport_window, 1)
 		
 		self.airport_window_created = True
-		self.is_transluscent = 1
 
 		Buffer = "Airport Info " + VERSION
 		screen_w, screen_h = [], []
@@ -174,15 +175,14 @@ class PythonInterface:
 		# Create Window
 		self.airport_window = XPCreateWidget(left_window, top_window, right_window, bottom_window, 1, Buffer, 1,  0, xpWidgetClass_MainWindow)
 		XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowHasCloseBoxes, 1)
-		if(self.is_transluscent):
-			XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowType, xpMainWindowStyle_Translucent)
- 		
-
+	
 		# Icao entry
 		top_row = top_window - 22
 		self.label_icao = XPCreateWidget(left_col_1, top_row, right_col_1, top_row - row_h, 1, "ICAO", 0, self.airport_window, xpWidgetClass_Caption)
 		self.airport_icao = XPCreateWidget(left_col_2, top_row, right_col_2 , top_row - row_h, 1, "", 0, self.airport_window, xpWidgetClass_TextField)
-	   	self.BtnSearch = XPCreateWidget(left_col_3, top_row, right_col_3, top_row - row_h, 1, "Search", 0, self.airport_window, xpWidgetClass_Button)
+		XPSetWidgetProperty(self.airport_icao, xpProperty_MaxCharacters, 4)
+
+	   	self.btn_search = XPCreateWidget(left_col_3, top_row, right_col_3, top_row - row_h, 1, "Search", 0, self.airport_window, xpWidgetClass_Button)
 		XPSetWidgetDescriptor(self.airport_icao, str(self.current_airport_icao))
 
 		# Show Result		
@@ -218,6 +218,9 @@ class PythonInterface:
 		if(nearest_name):
 			XPSetWidgetDescriptor(self.airport_icao, nearest_icao)
 
+
+		self.set_transluscent_look()
+
 	def print_airport_info(self):
     		
 		self.airpot_rwy_widget_container.remove_all()
@@ -247,15 +250,17 @@ class PythonInterface:
 			#XPSetWidgetDescriptor(self.rnwyInfoContent, runway_strresult)
 
 
-	def set_translucency(self):
-
-		 XPSetWidgetProperty(self.label_icao, xpProperty_CaptionLit, self.is_transluscent)
-		 XPSetWidgetProperty(self.airport_icao, xpProperty_CaptionLit, self.is_transluscent)
-		 XPSetWidgetProperty(self.info_row_1, xpProperty_CaptionLit, self.is_transluscent)
-		 XPSetWidgetProperty(self.info_row_2, xpProperty_CaptionLit, self.is_transluscent)
-		 XPSetWidgetProperty(self.info_row_3, xpProperty_CaptionLit, self.is_transluscent)
-		 XPSetWidgetProperty(self.info_row_4, xpProperty_CaptionLit, self.is_transluscent)
-		 XPSetWidgetProperty(self.info_row_5, xpProperty_CaptionLit, self.is_transluscent)
+	def set_transluscent_look(self):
+		if(self.is_transluscent):
+			XPSetWidgetProperty(self.airport_window, xpProperty_MainWindowType, xpMainWindowStyle_Translucent)
+			XPSetWidgetProperty(self.label_icao, xpProperty_CaptionLit, self.is_transluscent)			
+			XPSetWidgetProperty(self.airport_icao, xpProperty_CaptionLit, self.is_transluscent)
+			XPSetWidgetProperty(self.btn_search, xpProperty_CaptionLit, self.is_transluscent)
+			XPSetWidgetProperty(self.info_row_1, xpProperty_CaptionLit, self.is_transluscent)
+			XPSetWidgetProperty(self.info_row_2, xpProperty_CaptionLit, self.is_transluscent)
+			XPSetWidgetProperty(self.info_row_3, xpProperty_CaptionLit, self.is_transluscent)
+			XPSetWidgetProperty(self.info_row_4, xpProperty_CaptionLit, self.is_transluscent)
+			XPSetWidgetProperty(self.info_row_5, xpProperty_CaptionLit, self.is_transluscent)
 
 
 	def set_selected_icao_name(self):	
@@ -449,13 +454,17 @@ class Weather(object):
 
 	def get_noaa_weather(self):
 		
-		link = "http://tgftp.nws.noaa.gov/data/observations/metar/stations/" + self.icao.upper() + ".TXT"
+		try:	
+			link = "http://tgftp.nws.noaa.gov/data/observations/metar/stations/" + self.icao.upper() + ".TXT"
+			f = urllib.urlopen(link)
 
-		f = urllib.urlopen(link)
+			if(f.getcode() == 200):
+				self.metarcode = f.readlines()[1]
 
-		if(f.getcode() != 404):
-			self.metarcode = f.readlines()[1]
-			
+			pass
+		except:
+			print "There was a error"
+			pass
 
 	def convert_meta(self):
 		if(self.metarcode):
@@ -514,10 +523,17 @@ class Airport(object):
 
 		self.runways = runways
 
+	def sort_by_runway_length(self):
+		
+		new_runways = []
+		
+		#for runway in sorted(self.runways.values(), key=operator.attrgetter('length')):
+			
 	def open_runway(self, wind):
 
+		self.sort_by_runway_length()
 		runways_simple = []
-
+	
 		for runway in self.runways:
 			runways_simple.append(int(self.runways[runway].hdg))
 
