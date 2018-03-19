@@ -313,7 +313,7 @@ class PythonInterface:
 		AirportOb = Airport(self.current_airport_icao)
 		self.current_airport_runways = AirportOb.runways
 
-		if(self.current_airport_metar):
+		if(self.current_airport_metar.wind_dir):
 			self.current_aiprot_openrunway = AirportOb.determine_open_runway(self.current_airport_metar.wind_dir.value())
 
 		self.print_airport_info()
