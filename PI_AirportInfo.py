@@ -161,6 +161,9 @@ class PythonInterface:
 		self.current_airport_metar = None
 		self.current_airport_runways = None
 		self.current_aiprot_openrunway = None
+
+
+		self.airpotRwyWidget = None
 		
 		self.AirportMenuCB = self.AMHandler
 		self.mPluginItem = XPLMAppendMenuItem(XPLMFindPluginsMenu(), "Aiport Info", 0, 1)
@@ -261,14 +264,17 @@ class PythonInterface:
 
 		# Show Result		
 		top_row -= row_h	
-		self.InfoRow1 = XPCreateWidget(left_col_1, top_row,right_col_3, top_row - row_h, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		self.InfoRow1 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
 		top_row -= row_h2
-		self.InfoRow2 = XPCreateWidget(left_col_1, top_row,right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		self.InfoRow2 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
 		top_row -= row_h2
-		self.InfoRow3 = XPCreateWidget(left_col_1, top_row,right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
-		top_row -= row_h2
-		self.InfoRow4 = XPCreateWidget(left_col_1, top_row,right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		self.InfoRow3 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.AirportWindow, xpWidgetClass_Caption)
+		top_row -= row_h2+5
+		self.rnwyInfoWin = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0,self.AirportWindow, xpWidgetClass_SubWindow)
+		XPSetWidgetProperty(self.rnwyInfoWin, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
+		self.rnwyInfoContent = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0, self.AirportWindow, xpWidgetClass_Caption)
 	
+
 		# Register the widget handler
 		self.AMHandlerCB = self.AWHandler
 		XPAddWidgetCallback(self, self.AirportWindow, self.AMHandlerCB)
@@ -329,14 +335,15 @@ class PythonInterface:
 		# Get all Runways
 		if(self.current_airport_runways):
 			runway_strresult = ""
-			for runway_info in self.current_airport_runways:			
+			for runway_info in self.current_airport_runways:	
 				prefix = ""
-				if(runway_info == self.current_aiprot_openrunway):
+				if(self.get_runway_info(runway_info).id == self.current_aiprot_openrunway):
 					prefix = "*"
 
-				runway_strresult += prefix + self.get_runway_str(self.get_runway_info(runway_info))
+				runway_strresult += prefix + self.get_runway_str(self.get_runway_info(runway_info)) + "\n"									
 				
-			XPSetWidgetDescriptor(self.InfoRow4, runway_strresult)
+			XPSetWidgetDescriptor(self.rnwyInfoContent, runway_strresult)
+				
 
 	def get_runway_str(self, runway):
 			
@@ -502,11 +509,13 @@ class Airport(object):
 						rwy_ilscrs = rwy_info[7]
 						runways.update(
 							{
-								rwy_hdg: Runway(rwy_id,rwy_hdg,rwy_ils,rwy_ilscrs,rwy_length)
+								rwy_id: Runway(rwy_id,rwy_hdg,rwy_ils,rwy_ilscrs,rwy_length)
 							}
 						)
 					else:
 						break
+
+		print runways
 
 		self.runways = runways
 
@@ -522,7 +531,7 @@ class Airport(object):
 		for runway in self.runways:
 
 			if(int(self.runways[runway].hdg) == runway_dir):
-				return self.runways[runway].hdg 
+				return self.runways[runway].id 
 
 
 		return None
