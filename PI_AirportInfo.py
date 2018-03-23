@@ -547,52 +547,7 @@ class Airport(object):
 
 	
 	def is_env_ok(self):
-		# Check, if we are in X-Plane's root dir:
-		for d in XPDIRS:
-			if not os.path.isdir(os.path.join(os.getcwd(), d)):
-				logger.warning("The script needs to be stored and launched "
-								"in X-Plane's installation (root) directory.")
-				return False
-		fmsplans_dir = os.path.join(os.getcwd(), "Output", "FMS plans")
-		if not os.path.isdir(fmsplans_dir):
-			logger.warning("Cannot find directory \"%s\" to store SID/ STAR files."
-							% fmsplans_dir)
-			return False
-
-		# Check if GNS430 dir exists:
-		gns_dir = os.path.join(os.getcwd(), "Custom Data", "GNS430")
-		if not os.path.isdir(gns_dir):
-			logger.warning("Cannot find directory \"%s\". "
-							"X-Plane 10.30 or higher needs to be installed."
-							% gns_dir)
-			return False
-
-		navdata_dir = os.path.join(gns_dir, "navdata")
-
-		# Check if PROC dir exists:
-		# proc = "PROC" if "WIN" in platform.platform().upper() else "Proc"
-		proc_dirs = ("PROC", "Proc")
-		for proc in proc_dirs:
-			proc_dir = os.path.join(navdata_dir, proc)
-			if os.path.isdir(proc_dir):
-				break
-
-		if not os.path.isdir(proc_dir):
-			logger.warning(
-				"Cannot find one of the sub directories %s. "
-				"below the directory \"%s\". "
-				"Navigation database including SID/ STAR procedures "
-				"needs to be installed for GNS 430/530 (X-Plane 10.30+)."
-				" Use NavDataPro to achieve that for instance." %
-				(proc_dirs, navdata_dir))
-			return False
-
-		# Check if PROC dir exists:
-		custom_data_dir = os.path.join(
-			gns_dir,
-			os.pardir,
-		)
-
+		
 		# Check if "airports.txt" file exists:
 		airports_files = ("airports.txt", "Airports.txt")
 		for airports in airports_files:
@@ -606,21 +561,6 @@ class Airport(object):
 				(airports_files, navdata_dir))
 			return False
 
-		# Check if "earth_fix.dat" file exists:
-		fixes_file_path = os.path.join(custom_data_dir, "earth_fix.dat")
-		if not os.path.isfile(fixes_file_path):
-			logger.warning("Cannot find file \"%s\"." % fixes_file_path)
-			return False
-
-		# Check if "earth_nav.dat" dir exists:
-		navaids_file_path = os.path.join(custom_data_dir, "earth_nav.dat")
-		if not os.path.isfile(navaids_file_path):
-			logger.warning("Cannot find file \"%s\"." % navaids_file_path)
-			return False
-		directories = [
-			proc_dir,
-			fmsplans_dir,
-			navaids_file_path,
-			fixes_file_path,
-			airports_file_path]
+		
+		directories = [airports_file_path]
 		return directories
