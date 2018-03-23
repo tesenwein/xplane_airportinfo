@@ -36,7 +36,7 @@ SHOW_AIRPORT = 1
 MARGIN_W = 30
 MARGIN_H = 30
 WINDOW_W = 400
-WINDOW_H = 300
+WINDOW_H = 320
 
 # some constants
 XPDIRS = ["Aircraft", "Airfoils"]
@@ -196,7 +196,10 @@ class PythonInterface:
 		self.info_row_4 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
 		top_row -= row_h2
 		self.info_row_5 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
-		
+		top_row -= row_h2
+		self.info_row_6 = XPCreateWidget(left_col_1, top_row, right_col_3, top_row - row_h2, 1, "", 0, self.airport_window, xpWidgetClass_Caption)
+
+
 		top_row -= row_h
 		#self.rnwy_info = XPCreateWidget(left_col_1, top_row, right_window-padding, bottom_window+padding, 1, "" ,  0,self.airport_window, xpWidgetClass_SubWindow)
 		#XPSetWidgetProperty(self.rnwy_info, xpProperty_SubWindowType, xpSubWindowStyle_SubWindow)
@@ -229,9 +232,10 @@ class PythonInterface:
 
 		if(self.current_airport_metar):
 			XPSetWidgetDescriptor(self.info_row_2, "Qnh: {} / {}".format(self.current_airport_metar.press.string("mb"),self.current_airport_metar.press.string("in")))
-			XPSetWidgetDescriptor(self.info_row_3, "Wind: " + str(self.current_airport_metar.wind_dir) + " / " + self.current_airport_metar.wind())			
-			XPSetWidgetDescriptor(self.info_row_4, "Visiblilty: " + self.current_airport_metar.visibility())			
-			XPSetWidgetDescriptor(self.info_row_5, "Weather: " + self.current_airport_metar.sky_conditions())			
+			XPSetWidgetDescriptor(self.info_row_3, "Temp. / Dewpt.: {} / {} ".format(self.current_airport_metar.temp.string("C"),self.current_airport_metar.dewpt.string("C")))		
+			XPSetWidgetDescriptor(self.info_row_4, "Wind: " + str(self.current_airport_metar.wind_dir) + " / " + self.current_airport_metar.wind())			
+			XPSetWidgetDescriptor(self.info_row_5, "Visiblilty: " + self.current_airport_metar.visibility())			
+			XPSetWidgetDescriptor(self.info_row_6, "Weather: " + self.current_airport_metar.sky_conditions())			
 		
 
 
@@ -261,6 +265,7 @@ class PythonInterface:
 			XPSetWidgetProperty(self.info_row_3, xpProperty_CaptionLit, self.is_transluscent)
 			XPSetWidgetProperty(self.info_row_4, xpProperty_CaptionLit, self.is_transluscent)
 			XPSetWidgetProperty(self.info_row_5, xpProperty_CaptionLit, self.is_transluscent)
+			XPSetWidgetProperty(self.info_row_6, xpProperty_CaptionLit, self.is_transluscent)
 
 
 	def set_selected_icao_name(self):	
@@ -303,9 +308,11 @@ class PythonInterface:
 
 		if(self.current_airport_metar):
 			XPSetWidgetDescriptor(self.info_row_2, "Qnh: {} / {}".format(self.current_airport_metar.press.string("mb"),self.current_airport_metar.press.string("in")))
-			XPSetWidgetDescriptor(self.info_row_3, "Wind: " + str(self.current_airport_metar.wind_dir) + " / " + self.current_airport_metar.wind())			
-			XPSetWidgetDescriptor(self.info_row_4, "Visiblilty: " + self.current_airport_metar.visibility())			
-			XPSetWidgetDescriptor(self.info_row_5, "Weather: " + self.current_airport_metar.sky_conditions())			
+			XPSetWidgetDescriptor(self.info_row_3, "Temperature: " + str(self.current_airport_metar.temp()))			
+			XPSetWidgetDescriptor(self.info_row_4, "Wind: " + str(self.current_airport_metar.wind_dir) + " / " + self.current_airport_metar.wind())			
+			XPSetWidgetDescriptor(self.info_row_5, "Visiblilty: " + self.current_airport_metar.visibility())			
+			XPSetWidgetDescriptor(self.info_row_6, "Weather: " + self.current_airport_metar.sky_conditions())			
+			
 		
 
 
@@ -547,7 +554,52 @@ class Airport(object):
 
 	
 	def is_env_ok(self):
-		
+		# Check, if we are in X-Plane's root dir:
+		for d in XPDIRS:
+			if not os.path.isdir(os.path.join(os.getcwd(), d)):
+				logger.warning("The script needs to be stored and launched "
+								"in X-Plane's installation (root) directory.")
+				return False
+		fmsplans_dir = os.path.join(os.getcwd(), "Output", "FMS plans")
+		if not os.path.isdir(fmsplans_dir):
+			logger.warning("Cannot find directory \"%s\" to store SID/ STAR files."
+							% fmsplans_dir)
+			return False
+
+		# Check if GNS430 dir exists:
+		gns_dir = os.path.join(os.getcwd(), "Custom Data", "GNS430")
+		if not os.path.isdir(gns_dir):
+			logger.warning("Cannot find directory \"%s\". "
+							"X-Plane 10.30 or higher needs to be installed."
+							% gns_dir)
+			return False
+
+		navdata_dir = os.path.join(gns_dir, "navdata")
+
+		# Check if PROC dir exists:
+		# proc = "PROC" if "WIN" in platform.platform().upper() else "Proc"
+		proc_dirs = ("PROC", "Proc")
+		for proc in proc_dirs:
+			proc_dir = os.path.join(navdata_dir, proc)
+			if os.path.isdir(proc_dir):
+				break
+
+		if not os.path.isdir(proc_dir):
+			logger.warning(
+				"Cannot find one of the sub directories %s. "
+				"below the directory \"%s\". "
+				"Navigation database including SID/ STAR procedures "
+				"needs to be installed for GNS 430/530 (X-Plane 10.30+)."
+				" Use NavDataPro to achieve that for instance." %
+				(proc_dirs, navdata_dir))
+			return False
+
+		# Check if PROC dir exists:
+		custom_data_dir = os.path.join(
+			gns_dir,
+			os.pardir,
+		)
+
 		# Check if "airports.txt" file exists:
 		airports_files = ("airports.txt", "Airports.txt")
 		for airports in airports_files:
@@ -561,6 +613,21 @@ class Airport(object):
 				(airports_files, navdata_dir))
 			return False
 
-		
-		directories = [airports_file_path]
+		# Check if "earth_fix.dat" file exists:
+		fixes_file_path = os.path.join(custom_data_dir, "earth_fix.dat")
+		if not os.path.isfile(fixes_file_path):
+			logger.warning("Cannot find file \"%s\"." % fixes_file_path)
+			return False
+
+		# Check if "earth_nav.dat" dir exists:
+		navaids_file_path = os.path.join(custom_data_dir, "earth_nav.dat")
+		if not os.path.isfile(navaids_file_path):
+			logger.warning("Cannot find file \"%s\"." % navaids_file_path)
+			return False
+		directories = [
+			proc_dir,
+			fmsplans_dir,
+			navaids_file_path,
+			fixes_file_path,
+			airports_file_path]
 		return directories
