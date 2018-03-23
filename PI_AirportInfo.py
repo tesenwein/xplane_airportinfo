@@ -1,4 +1,4 @@
-VERSION = "0.1"
+VERSION = "0.2"
 
 # Python import
 from XPLMDefs import *
@@ -74,7 +74,7 @@ class PythonInterface:
 
 	def XPluginStart(self):
 
-		self.Name = "Aiport Info" + VERSION
+		self.Name = "Aiport Info v" + VERSION
 		self.Sig =  "TheoEsenwein.Python.AiportInfo"
 		self.Desc = "A plugin to get some Aiport information."
 		self.airport_window_created = False
